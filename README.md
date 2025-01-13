@@ -23,6 +23,8 @@ In the future, we can enhance scalability by leveraging blob storage solutions s
 
 For vector storage and similar image search, I have selected Qdrant, a vector database. This choice ensures the system can manage an ever-growing number of images effectively, providing robust and scalable similarity search functionality.
 
+Additionally, the model(CLIP) responsible for generating embeddings is deployed as an independent service. This decoupled architecture enables flexibility in replacing or upgrading the model without affecting the rest of the system. If we receive negative feedback from users regarding search results or develop a better-trained model, we can seamlessly switch to the new model by updating the standalone deployment, ensuring continuous improvement in the system’s accuracy and relevance.
+
 ### Feedback Endpoint:
 To record user feedback securely, I utilize JWT tokens for authentication, ensuring that requests are valid and authorized.
 
