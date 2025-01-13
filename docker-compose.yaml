@@ -1,0 +1,100 @@
+volumes:
+  image-search-db-volume:
+    name: image-search-db-volume
+  image-storage-volume:
+    name: image-storage-volume
+
+networks:
+  default:
+    name: image-search-network
+
+services:
+  web-server:
+    image: web-server:latest
+    container_name: image-search-web-server
+    build:
+      context: ./
+      dockerfile: ./services/web-server/Dockerfile
+    volumes:
+      - image-storage-volume:/storage
+    restart: always
+    environment:
+      # if need more logs, change `info` to `debug`
+      RUST_LOG: info,hyper=off
+      DATABASE_HOSTNAME: ${DATABASE_HOSTNAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - ${WEB_SERVER_HOST_PUBLIC_PORT}:${WEB_SERVER_PUBLIC_PORT}
+      - ${WEB_SERVER_HOST_PRIVATE_PORT}:${WEB_SERVER_PRIVATE_PORT}
+    depends_on:
+      postgres:
+        condition: service_started
+      migration:
+        condition: service_completed_successfully
+  img-to-vec-worker:
+    image: img-to-vec-worker:latest
+    container_name: image-search-img-to-vec-worker
+    build:
+      context: ./
+      dockerfile: ./services/img-to-vec-worker/Dockerfile
+    restart: always
+    volumes:
+      - ./images:/images
+
+  clip-model:
+    build:
+      context: ./services/clip-model
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/clip-model/src:/app
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+
+  migration:
+    image: image-search-tools:$TOOL_HASH
+    container_name: image-search-migration
+    restart: no
+    environment:
+      DATABASE_HOSTNAME: ${DATABASE_HOSTNAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    depends_on:
+      - postgres
+    volumes:
+      - ./:/src
+    command: |
+      sh -c '
+      export DATABASE_URL="postgres://$${DATABASE_USER}:$$(urlencode "$$DATABASE_PASSWORD")@$${DATABASE_HOSTNAME}"
+
+      echo ">>> Setup database for $$DATABASE_URL"
+
+      for f in /src/services/*; do
+        service_name="$(basename "$$f")"
+        echo ">>> Setup database for $$service_name"
+
+        if [ -d "/src/services/$${service_name}/migrations" ]; then
+          if ! sqlx database setup \
+            --source "/src/services/$${service_name}/migrations" \
+            --database-url "$${DATABASE_URL}/$${service_name}"; then
+            return 1
+          fi
+        fi
+      done
+      '
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - image-search-db-volume:/var/lib/postgresql/data
+    ports:
+      - ${DATABASE_HOST_PORT}:${DATABASE_PORT}

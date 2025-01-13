@@ -1,0 +1,43 @@
+[package]
+name = "web-server"
+version = "0.1.0"
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+xlib = { version = "0.1", path = "../../xlib" }
+
+axum = "0.8.1"
+tokio = { version = "1", features = ["full"] }
+chrono = "0.4.39"
+tracing = "0.1"
+thiserror = "2.0.11"
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1.0", features = ["serde", "v4"] }
+dotenv = "0.15.0"
+reqwest = { version = "0.12.12", features = ["json"] }
+serde_json = "1.0.132"
+
+sqlx = { version = "0.8", features = [
+    "runtime-tokio",
+    "postgres",
+    "chrono",
+    "uuid",
+    "migrate",
+    "bigdecimal",
+] }
+tower-http = { version = "0.6.1", features = ["trace"] }
+
+jsonwebtoken = "9.3"
+futures = "0.3.31"
+
+confique = "0.3.0"
+aws-sdk-s3 = { version = "1", features = ["http-1x"] }
+
+aws-config = "1"
+
+bytes = "1.8.0"

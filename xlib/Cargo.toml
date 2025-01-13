@@ -1,0 +1,41 @@
+[package]
+name = "xlib"
+version = "0.1.0"
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+axum = "0.8.1"
+tokio = { version = "1", features = ["full"] }
+sqlx = { version = "0.8.3", features = [
+    "runtime-tokio",
+    "postgres",
+    "chrono",
+    "uuid",
+    "migrate",
+] }
+redis = { version = "0.28.0", features = ["tokio-comp"] }
+
+thiserror = "2.0.11"
+anyhow = "1.0"
+
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+bcrypt = "0.16"
+chrono = { version = "0.4", features = ["serde"] }
+derive_more = { version = "1.0", features = ["full"] }
+http = "1.1"
+jsonwebtoken = "9.3"
+serde = { version = "1.0", features = ["derive"] }
+uom = "0.36"
+uuid = { version = "1.0", features = ["serde", "v4"] }
+lazy_static = "1.5"
+rand = "0.8"
+
+aws-credential-types = { version = "1.2.0", features = ["hardcoded-credentials"] }
+aws-types = "1.3.2"
+aws-sdk-ses = { version = "1.37.0", features = ["behavior-version-latest"] }
+aws-sdk-s3 = { version = "1.46.0", features = ["behavior-version-latest"] }
