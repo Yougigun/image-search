@@ -55,6 +55,7 @@ services:
         condition: service_started
 
   clip-model:
+    container_name: clip-model
     build:
       context: ./services/clip-model
       dockerfile: Dockerfile
