@@ -63,6 +63,7 @@ struct ImageMatch {
     score: f32,
 }
 
+// TODO: Inject this secret via environment variables and keep it secure for production deployment
 const JWT_SECRET: &str = "jwt_secret";
 async fn create_feedback_handler(
     State(state): State<AppState>,

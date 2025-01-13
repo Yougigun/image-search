@@ -41,7 +41,9 @@ async fn start_background_worker() {
 
     let http_client = reqwest::Client::builder().build().unwrap();
 
-    // let db_client = init_db().await;
+
+    // In MVP we only deploy one container but in the future we might need to scale up the worker
+    // so we should use external database to record the processed images
     let mut completed_images = Vec::new();
 
     // Set up graceful shutdown channel
