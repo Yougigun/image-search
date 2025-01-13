@@ -1,2 +1,4 @@
 **/target
 .DS_Store
+qdrant_storage
+**/__pycache__

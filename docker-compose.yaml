@@ -3,6 +3,8 @@ volumes:
     name: image-search-db-volume
   image-storage-volume:
     name: image-storage-volume
+  qdrant-storage-volume:
+    name: qdrant-storage-volume
 
 networks:
   default:
@@ -32,6 +34,11 @@ services:
         condition: service_started
       migration:
         condition: service_completed_successfully
+      clip-model:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
   img-to-vec-worker:
     image: img-to-vec-worker:latest
     container_name: image-search-img-to-vec-worker
@@ -41,6 +48,11 @@ services:
     restart: always
     volumes:
       - ./images:/images
+    depends_on:
+      clip-model:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
 
   clip-model:
     build:
@@ -50,9 +62,12 @@ services:
       - "8000:8000"
     volumes:
       - ./services/clip-model/src:/app
-    environment:
-      - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/clip/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 300s
 
   migration:
     image: image-search-tools:$TOOL_HASH
@@ -98,3 +113,13 @@ services:
       - image-search-db-volume:/var/lib/postgresql/data
     ports:
       - ${DATABASE_HOST_PORT}:${DATABASE_PORT}
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: always
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage

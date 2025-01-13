@@ -8,7 +8,8 @@ xlib = { version = "0.1", path = "../../xlib" }
 
 axum = "0.8.1"
 tokio = { version = "1", features = ["full"] }
-
+qdrant-client = "1.12.1"
+base64 = "0.22.1"
 tracing = "0.1"
 thiserror = "2.0.11"
 anyhow = "1.0"

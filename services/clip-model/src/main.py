@@ -17,9 +17,11 @@ processor = None
 def init_model():
     """Initialize the CLIP model and processor"""
     global model, processor
+    print("Starting CLIP model initialization...")
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     model.eval()  # Set model to evaluation mode
+    print("CLIP model initialization complete")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,7 +74,7 @@ async def embed_image(image_base64: str = Body(..., embed=True)):
 async def embed_text(text: str = Body(..., embed=True)):
     try:
         # Preprocess text
-        inputs = processor(text=text, return_tensors="pt", padding=True)
+        inputs = processor(text=text, images=None, return_tensors="pt", padding=True)
         
         # Generate embeddings
         with torch.no_grad():
