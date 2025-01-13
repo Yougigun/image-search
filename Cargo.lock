@@ -4231,6 +4231,7 @@ dependencies = [
  "dotenv",
  "futures",
  "jsonwebtoken",
+ "qdrant-client",
  "reqwest",
  "serde",
  "serde_json",

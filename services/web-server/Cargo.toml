@@ -7,6 +7,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+qdrant-client = "1.1.0"
 xlib = { version = "0.1", path = "../../xlib" }
 
 axum = "0.8.1"
