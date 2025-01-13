@@ -84,7 +84,6 @@ user's feedback range from 1 to 10.
 ```bash
 curl --location 'http://localhost:3000/api/v1/create-feedback' \
 --header 'Content-Type: application/json' \
---header 'Authorization: Bearer {{access-token}}' \
 --data '{
     "user_feedback":5,
     "jwt":"jwt_token_used_in_feedback"
