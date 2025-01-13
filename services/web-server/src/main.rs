@@ -24,14 +24,14 @@ use std::{
 };
 mod repo;
 
-use qdrant_client::qdrant::{QueryPointsBuilder, Vector};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use qdrant_client::qdrant::QueryPointsBuilder;
 use qdrant_client::Qdrant;
+
 #[derive(Deserialize, Serialize, Clone)]
 struct CreateFeedbackRequest {
-    text: String,
-    image_name: String,
+    jwt: String,
     user_feedback: i32,
-    model_name: String,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -54,25 +54,37 @@ struct SearchImageResponse {
     text: String,
     model_name: String,
     matches: Vec<ImageMatch>,
+    jwt: String,
 }
 
 #[derive(Serialize)]
 struct ImageMatch {
     image_name: String,
-    score: f64,
+    score: f32,
 }
 
+const JWT_SECRET: &str = "jwt_secret";
 async fn create_feedback_handler(
     State(state): State<AppState>,
     Json(payload): Json<CreateFeedbackRequest>,
 ) -> Response {
-    // TODO: parse the jwt token to get the signed content of image search result
+    let claims = match decode::<Claims>(
+        &payload.jwt,
+        &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
+        &Validation::default(),
+    ) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("Error decoding JWT: {}", e);
+            return StatusCode::UNAUTHORIZED.into_response();
+        }
+    };
     let repo = repo::Repo::new(state.pg_client);
     let r = repo
         .create_feedback(
-            payload.text,
-            payload.image_name,
-            payload.model_name,
+            claims.claims.image_name,
+            claims.claims.text,
+            claims.claims.model_name,
             payload.user_feedback,
         )
         .await;
@@ -80,6 +92,44 @@ async fn create_feedback_handler(
         Ok(id) => axum::Json(id).into_response(),
         Err(_) => Json(json!("create feedback failed")).into_response(),
     }
+}
+#[derive(Serialize, Deserialize)]
+struct Claims {
+    exp: i64,
+    iat: i64,
+    image_name: String,
+    text: String,
+    model_name: String,
+    score: f32,
+}
+
+fn create_jwt(
+    secret: &str,
+    image_name: String,
+    text: String,
+    model_name: String,
+    score: f32,
+) -> String {
+    let expiration = chrono::Utc::now()
+        .checked_add_signed(chrono::Duration::hours(24))
+        .unwrap()
+        .timestamp();
+
+    let claims = Claims {
+        exp: expiration,
+        iat: chrono::Utc::now().timestamp(),
+        image_name,
+        text,
+        model_name,
+        score,
+    };
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
+    .unwrap()
 }
 
 async fn search_image_handler(
@@ -118,39 +168,41 @@ async fn search_image_handler(
         None => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     };
 
-    // TODO: Search Qdrant with the vector
     let query = QueryPointsBuilder::new(collection_name)
         .query(text_vector)
         .with_payload(true);
 
     let search_result = qdrant_client.query(query).await.unwrap();
-    let image_name = search_result
-        .result
-        .first()
-        .unwrap()
-        .get("payload")
-        .get_value("image_name")
-        .unwrap()
-        .as_str()
-        .unwrap();
-    let score = search_result
-        .result
-        .first()
-        .unwrap()
-        .get("payload")
-        .get_value("score")
-        .unwrap()
-        .as_double()
-        .unwrap();
-    let response = SearchImageResponse {
-        text: payload.text,
-        model_name: "clip".to_string(),
+    let first_result = match search_result.result.first() {
+        Some(r) => r,
+        None => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    };
+    let image_name = match first_result.payload.get("image_name") {
+        Some(v) => match v.as_str() {
+            Some(s) => s.to_string(),
+            None => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        },
+        None => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    };
+    let score = first_result.score;
+    let mut response = SearchImageResponse {
+        text: payload.text.clone(),
+        model_name: "CLIP".to_string(),
         matches: vec![ImageMatch {
-            image_name: image_name.to_string(),
+            image_name: image_name.clone(),
             score,
         }],
+        jwt: String::new(),
     };
 
+    let jwt = create_jwt(
+        JWT_SECRET,
+        image_name,
+        payload.text,
+        "CLIP".to_string(),
+        score,
+    );
+    response.jwt = jwt;
     Json(response).into_response()
 }
 
