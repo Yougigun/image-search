@@ -17,7 +17,7 @@
 2.	Record User Feedback
 
 ### Overview:
-This is the initial design for an image search engine. To handle the processing of images efficiently, I have chosen to use a worker-based system to asynchronously process any images uploaded to the /images folder. This approach is essential because the image-to-embedding process is computationally intensive and time-consuming, and new images are constantly being uploaded.
+This is the initial design for an image search engine. To handle the processing of images efficiently, I have chosen to use a worker-based system to asynchronously process any images uploaded to the /images folder. This approach is essential because the image-to-embedding process is computationally intensive and time-consuming, and new images might be constantly being uploaded.
 
 In the future, we can enhance scalability by leveraging blob storage solutions such as Amazon S3 or a self-hosted object storage service.
 
