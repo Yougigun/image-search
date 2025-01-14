@@ -8,6 +8,7 @@ use qdrant_client::Qdrant;
 use base64::Engine;
 use std::time::Duration;
 use tracing::{info, warn};
+use uuid::Uuid;
 async fn start_background_worker() {
     let qdrant_client = Qdrant::from_url("http://qdrant:6334").build().unwrap();
     let collection_name = "clip_images_collection";
@@ -40,7 +41,6 @@ async fn start_background_worker() {
     info!("Collection created");
 
     let http_client = reqwest::Client::builder().build().unwrap();
-
 
     // In MVP we only deploy one container but in the future we might need to scale up the worker
     // so we should use external database to record the processed images
@@ -104,7 +104,7 @@ async fn start_background_worker() {
 
                                                                         info!("Successfully parsed vector with {} dimensions", vector_data.len());
                                                                         let point = PointStruct::new(
-                                                                            i as u64 + 1,
+                                                                            Uuid::new_v4().to_string(),
                                                                             vector_data,
                                                                             [("image_name", file_name.clone().into())]
                                                                         );
