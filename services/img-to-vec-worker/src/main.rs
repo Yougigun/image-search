@@ -104,7 +104,7 @@ async fn start_background_worker() {
 
                                                                         info!("Successfully parsed vector with {} dimensions", vector_data.len());
                                                                         let point = PointStruct::new(
-                                                                            Uuid::new_v4().to_string(),
+                                                                            Uuid::new_v5(&Uuid::NAMESPACE_URL, file_name.as_bytes()).to_string(),
                                                                             vector_data,
                                                                             [("image_name", file_name.clone().into())]
                                                                         );
