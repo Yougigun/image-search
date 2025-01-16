@@ -79,7 +79,8 @@ services:
       DATABASE_USER: ${DATABASE_USER}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - ./:/src
     command: |
@@ -114,6 +115,12 @@ services:
       - image-search-db-volume:/var/lib/postgresql/data
     ports:
       - ${DATABASE_HOST_PORT}:${DATABASE_PORT}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   qdrant:
     image: qdrant/qdrant:latest
